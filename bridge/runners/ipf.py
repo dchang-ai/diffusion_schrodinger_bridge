@@ -19,6 +19,20 @@ from accelerate import Accelerator, DistributedType
 import time
 
 
+class WorkerInitFn:
+    """Seeds each dataloader worker differently.
+
+    Defined at module level rather than as a closure so it can be pickled by
+    the `spawn` start method, which is the default on macOS and Windows.
+    """
+
+    def __init__(self, process_index):
+        self.process_index = process_index
+
+    def __call__(self, worker_id):
+        np.random.seed(np.random.get_state()[1][0] + worker_id + self.process_index)
+
+
 class IPFBase(torch.nn.Module):
 
     def __init__(self, args):
@@ -26,7 +40,7 @@ class IPFBase(torch.nn.Module):
         self.args = args
 
         #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.accelerator = Accelerator(fp16=False, cpu=args.device == 'cpu')
+        self.accelerator = Accelerator(mixed_precision='no', cpu=args.device == 'cpu')
         self.device = self.accelerator.device  # torch.device(args.device)
 
         # training params
@@ -45,7 +59,9 @@ class IPFBase(torch.nn.Module):
             gamma_half = np.geomspace(
                 self.args.gamma_min, self.args.gamma_max, n)
         gammas = np.concatenate([gamma_half, np.flip(gamma_half)])
-        gammas = torch.tensor(gammas).to(self.device)
+        # float32 rather than numpy's float64: MPS has no float64 support, and
+        # Langevin casts the schedule to float anyway.
+        gammas = torch.tensor(gammas, dtype=torch.float32).to(self.device)
         self.T = torch.sum(gammas)
 
         # get models
@@ -117,9 +133,9 @@ class IPFBase(torch.nn.Module):
 
         if self.args.checkpoint_run:
             if "checkpoint_f" in self.args:
-                net_f.load_state_dict(torch.load(self.args.checkpoint_f))
+                net_f.load_state_dict(torch.load(self.args.checkpoint_f, map_location=self.device, weights_only=True))
             if "checkpoint_b" in self.args:
-                net_b.load_state_dict(torch.load(self.args.checkpoint_b))
+                net_b.load_state_dict(torch.load(self.args.checkpoint_b, map_location=self.device, weights_only=True))
 
         if self.args.dataparallel:
             net_f = torch.nn.DataParallel(net_f)
@@ -159,14 +175,14 @@ class IPFBase(torch.nn.Module):
 
                 if "sample_checkpoint_f" in self.args:
                     sample_net_f.load_state_dict(
-                        torch.load(self.args.sample_checkpoint_f))
+                        torch.load(self.args.sample_checkpoint_f, map_location=self.device, weights_only=True))
                     if self.args.dataparallel:
                         sample_net_f = torch.nn.DataParallel(sample_net_f)
                     sample_net_f = sample_net_f.to(self.device)
                     self.ema_helpers['f'].register(sample_net_f)
                 if "sample_checkpoint_b" in self.args:
                     sample_net_b.load_state_dict(
-                        torch.load(self.args.sample_checkpoint_b))
+                        torch.load(self.args.sample_checkpoint_b, map_location=self.device, weights_only=True))
                     if self.args.dataparallel:
                         sample_net_b = torch.nn.DataParallel(sample_net_b)
                     sample_net_b = sample_net_b.to(self.device)
@@ -186,9 +202,7 @@ class IPFBase(torch.nn.Module):
         self.var_final = var_final.to(self.device)
         self.std_final = torch.sqrt(var_final).to(self.device)
 
-        def worker_init_fn(worker_id):
-            np.random.seed(np.random.get_state()[
-                           1][0] + worker_id + self.accelerator.process_index)
+        worker_init_fn = WorkerInitFn(self.accelerator.process_index)
 
         self.kwargs = {"num_workers": self.args.num_workers,
                        "pin_memory": self.args.pin_memory,

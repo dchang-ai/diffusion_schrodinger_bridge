@@ -1,9 +1,9 @@
-import errno
 import hashlib
 import os
 import os.path
+import urllib.request
 
-from torch.utils.model_zoo import tqdm
+from tqdm import tqdm
 
 
 def gen_bar_updater():
@@ -34,19 +34,6 @@ def check_integrity(fpath, md5=None):
     return True
 
 
-def makedir_exist_ok(dirpath):
-    """
-    Python2 support for os.makedirs(.., exist_ok=True)
-    """
-    try:
-        os.makedirs(dirpath)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            pass
-        else:
-            raise
-
-
 def download_url(url, root, filename=None, md5=None):
     """Download a file from a url and place it in root.
     Args:
@@ -55,14 +42,12 @@ def download_url(url, root, filename=None, md5=None):
         filename (str, optional): Name to save the file under. If None, use the basename of the URL
         md5 (str, optional): MD5 checksum of the download. If None, do not check
     """
-    from six.moves import urllib
-
     root = os.path.expanduser(root)
     if not filename:
         filename = os.path.basename(url)
     fpath = os.path.join(root, filename)
 
-    makedir_exist_ok(root)
+    os.makedirs(root, exist_ok=True)
 
     # downloads file
     if os.path.isfile(fpath) and check_integrity(fpath, md5):
@@ -146,7 +131,7 @@ def download_file_from_google_drive(file_id, root, filename=None, md5=None):
         filename = file_id
     fpath = os.path.join(root, filename)
 
-    makedir_exist_ok(root)
+    os.makedirs(root, exist_ok=True)
 
     if os.path.isfile(fpath) and check_integrity(fpath, md5):
         print('Using downloaded and verified file: ' + fpath)

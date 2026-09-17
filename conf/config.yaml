@@ -5,6 +5,8 @@ defaults:
   - job
   - dataset: 2d #celeba, 2d, stackedmnist
   - model: Basic #Basic, UNET
+  # _self_ last == pre-1.1 behaviour: keys below override the groups above.
+  - _self_
   
 
 # data

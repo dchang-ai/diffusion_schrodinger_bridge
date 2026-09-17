@@ -10,7 +10,7 @@ from bridge.runners.ipf import IPFSequential
 
 # SETTING PARAMETERS
 
-@hydra.main(config_path="./conf", config_name="config")
+@hydra.main(version_base=None, config_path="./conf", config_name="config")
 def main(args):
 
     print('Directory: ' + os.getcwd())

@@ -1,6 +1,9 @@
 # @package hydra
 
 job:
+  # Hydra 1.2+ no longer changes the working directory by default; the
+  # runner writes checkpoints/im/gif relative to the run dir, so keep it on.
+  chdir: True
   config:
     # configuration for the ${hydra.job.override_dirname} runtime variable
     override_dirname:

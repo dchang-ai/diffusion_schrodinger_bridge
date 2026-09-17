@@ -51,11 +51,23 @@ This project can be installed from its git repository.
 
 or, if `git` is unavailable, download as a ZIP from GitHub https://github.com/<repository>.
   
-2. Install:
+2. Install (Python 3.12):
+
+    with conda:
 
     `conda env create -f conda.yaml`
-    
+
     `conda activate bridge`
+
+    or with a plain virtualenv:
+
+    `python3.12 -m venv venv && source venv/bin/activate`
+
+    `pip install -r requirements.txt`
+
+    For a CUDA build of PyTorch, install `torch`/`torchvision` from the
+    PyTorch index first, e.g.
+    `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124`
 
 3. Download data examples:
 

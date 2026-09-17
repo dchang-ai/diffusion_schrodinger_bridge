@@ -16,8 +16,8 @@ class Stacked_MNIST(Dataset):
         super(Stacked_MNIST, self).__init__()
         self.num_channels = min(3,num_channels)
         if load:
-            self.data = torch.load(os.path.join(root, "data.pt"))
-            self.targets = torch.load(os.path.join(root, "targets.pt"))
+            self.data = torch.load(os.path.join(root, "data.pt"), weights_only=True)
+            self.targets = torch.load(os.path.join(root, "targets.pt"), weights_only=True)
         else:
             if source_root is None:
                 source_root = "./datasets"

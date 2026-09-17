@@ -1,0 +1,35 @@
+# Diffusion Schrödinger Bridge — Python 3.12+
+#
+# Lower bounds are the first releases that ship Python 3.12 wheels (or that
+# provide an API this code depends on). No upper bounds are pinned, so `pip
+# install -r requirements.txt` picks up current releases.
+#
+# Verified end-to-end (2d/Basic and stackedmnist/UNET) on Python 3.12.14 with:
+#   torch 2.14.0, torchvision 0.29.0, numpy 2.5.3, scipy 1.18.1,
+#   scikit-learn 1.9.1, matplotlib 3.11.2, pillow 12.3.0, pandas 3.0.5,
+#   tqdm 4.70.1, hydra-core 1.3.7, omegaconf 2.3.1, accelerate 1.15.0,
+#   pytorch-lightning 2.6.6, requests 2.34.2
+#
+# For a CUDA build of PyTorch, install torch/torchvision from the appropriate
+# index first, e.g.
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+
+# --- deep learning ---
+torch>=2.2            # 2.2 is the first release with cp312 wheels
+torchvision>=0.17     # pairs with torch 2.2
+accelerate>=0.26      # Accelerator(mixed_precision=...); the old `fp16` flag is gone
+pytorch-lightning>=2.2  # loggers only (CSVLogger / NeptuneLogger)
+
+# --- configuration ---
+hydra-core>=1.3.2     # needs version_base= and hydra.job.chdir (see conf/job.yaml)
+omegaconf>=2.3
+
+# --- numerics / data ---
+numpy>=1.26           # first release with cp312 wheels; numpy 2.x is supported
+scipy>=1.11.3
+scikit-learn>=1.3.2   # bridge/data/two_dim.py toy distributions
+pandas>=2.1.1         # CelebA annotation parsing
+pillow>=10.1
+matplotlib>=3.8
+tqdm>=4.66
+requests>=2.31        # CelebA download helper
